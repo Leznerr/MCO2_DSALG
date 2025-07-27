@@ -90,6 +90,7 @@ static bool grow(Heap *h)
 size_t heap_push(Heap *h, void *item, int key)
 {
     if (!h) return SIZE_MAX;
+    if (key < 0) return SIZE_MAX;  /* enforce non-negative priorities */
     if (h->size == h->cap && !grow(h)) return SIZE_MAX;
     size_t idx = h->size++;
     h->key[idx]  = key;
