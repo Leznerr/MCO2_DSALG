@@ -79,7 +79,9 @@ void edge_check(Graph *g, const char *u_name, const char *v_name);
 /* ────────────────────────────────────────────────────────────────────────── */
 
 // Get neighbors of a vertex (fills array of names, returns count)
-size_t graph_get_neighbors(const Graph *g, const char *name, char neighbors[][MAX_NAME_LEN]);
+// Returns SIZE_MAX if the vertex is not found
+size_t graph_get_neighbors(const Graph *g, const char *name,
+                           char neighbors[][MAX_NAME_LEN]);
 
 // Check if a vertex exists in the graph
 bool graph_vertex_exists(const Graph *g, const char *name);
