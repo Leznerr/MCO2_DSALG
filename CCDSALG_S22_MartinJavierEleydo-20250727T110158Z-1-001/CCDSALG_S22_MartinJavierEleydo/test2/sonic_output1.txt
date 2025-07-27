@@ -1,0 +1,28 @@
+Sonic
+Knuckles
+Shadow
+Tails
+Eggman
+Maria
+MST(G) = (V,E)
+V = {Eggman, Knuckles, Maria, Shadow, Sonic, Tails}
+E = {
+  (Eggman, Shadow, 1),
+  (Knuckles, Sonic, 8),
+  (Knuckles, Tails, 7),
+  (Maria, Shadow, 10),
+  (Shadow, Sonic, 8)
+}
+Total Edge Weight: 34
+Sonic -> Shadow; Total edge cost = 8
+Maria -> Shadow -> Sonic -> Knuckles; Total edge cost = 26
+Graph = (V,E)
+V = {Eggman, Knuckles, Maria, Shadow, Sonic, Tails}
+E = {
+(Eggman, Shadow, 1),
+(Knuckles, Sonic, 8),
+(Knuckles, Tails, 7),
+(Maria, Shadow, 10),
+(Shadow, Sonic, 8),
+(Sonic, Tails, 10)
+}
