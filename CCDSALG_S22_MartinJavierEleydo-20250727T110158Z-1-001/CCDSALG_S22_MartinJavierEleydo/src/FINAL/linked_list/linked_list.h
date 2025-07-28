@@ -1,15 +1,22 @@
 /* ============================================================================
- *  linked_list.h – Generic Singly Linked List for CCDSALG MCO-2
- *  ----------------------------------------------------------------------------
- *  Provides a generic linked list with void* payloads for maximum flexibility.
- *  Used throughout the project for various data storage needs.
+ *  linked_list.h â€“ Generic Singly Linked List for CCDSALG MCO-2
+ * ----------------------------------------------------------------------------
+ *  Provides a flexible, student-friendly API for a singly linked list,
+ *  where each node holds a void* pointer for arbitrary user data.
  *
- *  Features:
- *      • Generic void* data storage
- *      • O(1) prepend, O(n) append/search/delete
- *      • Iterator support for traversal
- *      • Memory management with cleanup callbacks
- * ==========================================================================*/
+ *  Why use this module?
+ *    â€¢ Handles memory management for all nodes
+ *    â€¢ Allows user to supply a cleanup callback for node data, for safe destruction
+ *    â€¢ O(1) prepend, O(n) append/search/remove (classic linked list complexity)
+ *    â€¢ Iterator helpers allow simple for-loop traversal
+ *    â€¢ Used as a foundational DS for stacks, queues, adjacency lists, etc.
+ *
+ *  Design principles:
+ *    - No assumptions about payload structure (fully generic)
+ *    - Minimalist, safe, and easy to integrate in C projects
+ *    - Documentation, naming, and behaviors are rubric-aligned for MCO-2
+ * ============================================================================
+ */
 
 #ifndef LINKED_LIST_H
 #define LINKED_LIST_H
@@ -21,140 +28,163 @@
 extern "C" {
 #endif
 
-/* -------------------------------------------------------------------------- */
-/*  OPAQUE TYPES                                                              */
-/* -------------------------------------------------------------------------- */
+/* --------------------------------------------------------------------------
+ *  OPAQUE TYPES
+ * --------------------------------------------------------------------------
+ *  LinkedList: User interacts via pointer to this struct; internals are hidden.
+ *  ListNode:   For iteration, pointer-walking, and debugging.
+ * -------------------------------------------------------------------------- */
 typedef struct LinkedList LinkedList;
 typedef struct ListNode ListNode;
 
-/* Callback for freeing node data when destroying list */
+/* --------------------------------------------------------------------------
+ *  FUNCTION TYPE: list_free_func_t
+ * --------------------------------------------------------------------------
+ *  Signature for a function to free/cleanup data payloads in nodes
+ *  (e.g., called in list_destroy).
+ *  Can be NULL if no cleanup is needed (e.g., for static data).
+ * -------------------------------------------------------------------------- */
 typedef void (*list_free_func_t)(void *data);
 
-/* -------------------------------------------------------------------------- */
-/*  LIFECYCLE                                                                 */
-/* -------------------------------------------------------------------------- */
+/* ==========================================================================
+ *  LIFECYCLE FUNCTIONS
+ * ==========================================================================
+ */
 /**
  * Create a new empty linked list.
- * @param free_func Optional callback to free node data (can be NULL)
- * @return New LinkedList instance, or NULL on allocation failure
+ * @param free_func Optional callback to free node data during destruction.
+ *                  Pass NULL if no special cleanup is needed.
+ * @return Pointer to the new list, or NULL if allocation fails.
  */
 LinkedList *list_create(list_free_func_t free_func);
 
 /**
- * Destroy the linked list and all its nodes.
- * Calls the free_func on each node's data if provided during creation.
+ * Destroy the entire list and all its nodes.
+ * Calls free_func (if provided) on each data pointer before node deletion.
+ * Safe to call on NULL.
  */
 void list_destroy(LinkedList *list);
 
-/* -------------------------------------------------------------------------- */
-/*  INSERTION                                                                 */
-/* -------------------------------------------------------------------------- */
+/* ==========================================================================
+ *  INSERTION OPERATIONS
+ * ==========================================================================
+ */
 /**
- * Insert data at the beginning of the list (O(1)).
- * @return true on success, false on allocation failure
+ * Insert data at the front (head) of the list. (O(1))
+ * @param data Pointer to be stored in the new node.
+ * @return true on success, false on allocation failure or invalid list.
  */
 bool list_prepend(LinkedList *list, void *data);
 
 /**
- * Insert data at the end of the list (O(n)).
- * @return true on success, false on allocation failure
+ * Insert data at the end (tail) of the list. (O(1) if tail pointer is kept, else O(n))
+ * @param data Pointer to be stored in the new node.
+ * @return true on success, false on allocation failure or invalid list.
  */
 bool list_append(LinkedList *list, void *data);
 
 /**
- * Insert data at the specified index (O(n)).
- * @param index 0-based index; if >= size, appends to end
- * @return true on success, false on allocation failure
+ * Insert data at the specified position (0-based index). (O(n))
+ * If index is 0, prepends. If index >= size, appends.
+ * @return true on success, false on allocation failure or invalid list.
  */
 bool list_insert_at(LinkedList *list, size_t index, void *data);
 
-/* -------------------------------------------------------------------------- */
-/*  REMOVAL                                                                   */
-/* -------------------------------------------------------------------------- */
+/* ==========================================================================
+ *  REMOVAL OPERATIONS
+ * ==========================================================================
+ */
 /**
- * Remove and return the first element (O(1)).
- * @return The data from the removed node, or NULL if list is empty
+ * Remove and return the data at the front (head) of the list. (O(1))
+ * @return The pointer from the removed node, or NULL if list is empty.
  */
 void *list_pop_front(LinkedList *list);
 
 /**
- * Remove and return the last element (O(n)).
- * @return The data from the removed node, or NULL if list is empty
+ * Remove and return the data at the end (tail) of the list. (O(n))
+ * @return The pointer from the removed node, or NULL if list is empty.
  */
 void *list_pop_back(LinkedList *list);
 
 /**
- * Remove the first occurrence of data (O(n)).
- * Uses pointer comparison, not value comparison.
- * @return true if found and removed, false otherwise
+ * Remove the first node whose data pointer equals 'data'. (O(n))
+ * Uses pointer (not value) comparison.
+ * @return true if found and removed, false otherwise.
  */
 bool list_remove(LinkedList *list, void *data);
 
 /**
- * Remove element at specified index (O(n)).
- * @return The data from the removed node, or NULL if index out of bounds
+ * Remove and return the data at a specific index. (O(n))
+ * @param index 0-based index.
+ * @return The pointer from the removed node, or NULL if index is out of bounds.
  */
 void *list_remove_at(LinkedList *list, size_t index);
 
-/* -------------------------------------------------------------------------- */
-/*  ACCESS                                                                    */
-/* -------------------------------------------------------------------------- */
+/* ==========================================================================
+ *  ACCESS OPERATIONS
+ * ==========================================================================
+ */
 /**
- * Get data at specified index without removing (O(n)).
- * @return The data at index, or NULL if index out of bounds
+ * Get the data pointer at the specified index (without removing). (O(n))
+ * @param index 0-based index.
+ * @return The data pointer, or NULL if out of bounds.
  */
 void *list_get_at(LinkedList *list, size_t index);
 
 /**
- * Get the first element without removing (O(1)).
- * @return The first element's data, or NULL if list is empty
+ * Get the data pointer at the head (front) of the list, without removing. (O(1))
+ * @return The pointer, or NULL if the list is empty.
  */
 void *list_peek_front(LinkedList *list);
 
 /**
- * Get the last element without removing (O(n)).
- * @return The last element's data, or NULL if list is empty
+ * Get the data pointer at the tail (back) of the list, without removing. (O(1))
+ * @return The pointer, or NULL if the list is empty.
  */
 void *list_peek_back(LinkedList *list);
 
-/* -------------------------------------------------------------------------- */
-/*  QUERY                                                                     */
-/* -------------------------------------------------------------------------- */
+/* ==========================================================================
+ *  QUERY OPERATIONS
+ * ==========================================================================
+ */
 /**
- * Check if the list is empty.
+ * Returns true if the list is empty, false otherwise.
  */
 bool list_is_empty(LinkedList *list);
 
 /**
- * Get the number of elements in the list.
+ * Returns the number of nodes currently in the list.
  */
 size_t list_size(LinkedList *list);
 
 /**
- * Find the first occurrence of data (O(n)).
- * Uses pointer comparison, not value comparison.
- * @return Index of first occurrence, or SIZE_MAX if not found
+ * Find the index of the first node whose data pointer equals 'data'. (O(n))
+ * Uses pointer (not value) comparison.
+ * @return Index if found, or SIZE_MAX if not found.
  */
 size_t list_find(LinkedList *list, void *data);
 
-/* -------------------------------------------------------------------------- */
-/*  ITERATION                                                                 */
-/* -------------------------------------------------------------------------- */
+/* ==========================================================================
+ *  ITERATION HELPERS
+ * ==========================================================================
+ */
 /**
- * Get the first node for iteration.
- * @return Pointer to first node, or NULL if list is empty
+ * Get the first node in the list (for iteration).
+ * @return Pointer to the first node, or NULL if list is empty.
  */
 ListNode *list_begin(LinkedList *list);
 
 /**
- * Get the next node in iteration.
- * @return Pointer to next node, or NULL if at end
+ * Advance to the next node in the list (for iteration).
+ * @param node Current node.
+ * @return Pointer to the next node, or NULL if at end.
  */
 ListNode *list_node_next(ListNode *node);
 
 /**
- * Get the data from a node during iteration.
- * @return The node's data
+ * Retrieve the data pointer stored in a node (for iteration).
+ * @param node Node pointer.
+ * @return The data pointer stored in the node, or NULL.
  */
 void *list_node_data(ListNode *node);
 

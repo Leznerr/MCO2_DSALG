@@ -1,15 +1,18 @@
 /* ============================================================================
- *  stack.h – Generic Stack for CCDSALG MCO-2
- *  ----------------------------------------------------------------------------
- *  Provides a generic stack with void* payloads for maximum flexibility.
- *  Used by DFS and path checking algorithms.
+ *  stack.h â€“ Generic Stack Interface for CCDSALG MCO-2
+ * ----------------------------------------------------------------------------
+ *  Public API for a dynamically-growing, array-based stack supporting any data
+ *  type via void* pointers. Used by DFS, path checking, and other algorithms
+ *  that require Last-In-First-Out (LIFO) behavior.
  *
- *  Features:
- *      • Generic void* data storage
- *      • O(1) push/pop operations
- *      • Dynamic growth
- *      • Memory-safe operations
- * ==========================================================================*/
+ *  Features & Patterns:
+ *      âœ” Generic payloads (void*) for max flexibility (any struct or pointer type)
+ *      âœ” O(1) amortized push/pop (resizing handled automatically)
+ *      âœ” Robust memory management (never leaks; never frees user data)
+ *      âœ” Memory-safe (all functions return false/NULL on failure)
+ *      âœ” Foundation for many DSAL classic problems (balancing, DFS, undo, etc.)
+ * ============================================================================
+ */
 
 #ifndef STACK_H
 #define STACK_H
@@ -22,7 +25,7 @@ extern "C" {
 #endif
 
 /* -------------------------------------------------------------------------- */
-/*  OPAQUE TYPE                                                               */
+/*  OPAQUE STACK TYPE: Implementation details hidden from users               */
 /* -------------------------------------------------------------------------- */
 typedef struct Stack Stack;
 
@@ -31,48 +34,51 @@ typedef struct Stack Stack;
 /* -------------------------------------------------------------------------- */
 /**
  * Create a new empty stack.
- * @param init_cap Initial capacity (will default to reasonable size if 0)
- * @return New Stack instance, or NULL on allocation failure
+ * @param init_cap  Initial capacity (array will grow if exceeded; 0 for default)
+ * @return          Pointer to a new Stack, or NULL on allocation failure.
  */
 Stack *stack_create(size_t init_cap);
 
 /**
- * Destroy the stack and free all memory.
- * Does not free the data pointers stored in the stack.
+ * Destroy the stack and free all internal memory.
+ * Note: Does NOT free the pointers stored in the stack (user owns those).
  */
 void stack_destroy(Stack *stack);
 
 /* -------------------------------------------------------------------------- */
-/*  OPERATIONS                                                                */
+/*  CORE STACK OPERATIONS                                                     */
 /* -------------------------------------------------------------------------- */
 /**
- * Push data onto the top of the stack (O(1) amortized).
- * @return true on success, false on allocation failure
+ * Push data onto the top of the stack.
+ * O(1) amortized. Grows dynamically if needed.
+ * @return true on success, false if allocation fails or stack is NULL.
  */
 bool stack_push(Stack *stack, void *data);
 
 /**
- * Pop and return the top element (O(1)).
- * @return The data from the top of the stack, or NULL if empty
+ * Pop and return the top element.
+ * @return Pointer to the data from the top of the stack, or NULL if empty/invalid.
  */
 void *stack_pop(Stack *stack);
 
 /**
- * Peek at the top element without removing it (O(1)).
- * @return The data from the top of the stack, or NULL if empty
+ * Peek at the top element without removing it.
+ * @return Pointer to the data at the top, or NULL if empty/invalid.
  */
 void *stack_peek(Stack *stack);
 
 /* -------------------------------------------------------------------------- */
-/*  QUERY                                                                     */
+/*  QUERY OPERATIONS                                                          */
 /* -------------------------------------------------------------------------- */
 /**
  * Check if the stack is empty.
+ * @return true if empty or NULL, false otherwise.
  */
 bool stack_is_empty(Stack *stack);
 
 /**
  * Get the number of elements in the stack.
+ * @return Number of elements, or 0 if stack is NULL.
  */
 size_t stack_size(Stack *stack);
 

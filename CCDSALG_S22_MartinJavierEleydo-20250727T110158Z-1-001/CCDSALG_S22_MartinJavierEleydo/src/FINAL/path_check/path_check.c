@@ -1,10 +1,20 @@
 /* ============================================================================
  *  path_check.c  –  Command 7: Connectivity / Path-Check
- *  ----------------------------------------------------------------------------
- *  Prints "1\n" if an undirected path exists between <src> and <dst>, else
- *  "0\n".  Returns the same boolean for callers.
- *  Complexity: O(V + E) time,  O(V) extra space.
- * ==========================================================================*/
+ * ----------------------------------------------------------------------------
+ *  Checks if an undirected path exists between two vertices in the graph.
+ *  Prints "1\n" if a path exists from <src> to <dst>, else prints "0\n".
+ *  Returns the same result as a boolean for potential use in other modules.
+ *
+ *  Complexity: O(V + E) time,  O(V) extra space (DFS via stack).
+ * ----------------------------------------------------------------------------
+ *  Design Notes:
+ *    - Uses iterative Depth-First Search (DFS) to avoid stack overflow and
+ *      support large graphs safely.
+ *    - Builds a temporary array for efficient index-based lookup and
+ *      visited marking.
+ *    - Ensures lexicographic neighbor traversal for consistency.
+ * ============================================================================
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,11 +22,17 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "stack.h"           /* P1 Stack module                          */
-#include "graph.h"           /* Public Graph API                         */
-#include "path_check.h"      /* This module’s public declaration         */
+#include "stack.h"           /* P1 Stack module */
+#include "graph.h"           /* Public Graph API */
+#include "path_check.h"      /* This module’s public declaration */
 
-/* ─── Shadow graph.c internals (must match layout exactly) ──────────────── */
+/* ============================================================================
+ *  INTERNAL STRUCTURE DEFS (Shadow graph.c)
+ * ----------------------------------------------------------------------------
+ *  These match the private graph.c structures so we can efficiently traverse.
+ *  Only safe if kept in exact sync with the main graph.c implementation.
+ * ============================================================================
+ */
 typedef struct Vertex Vertex;
 
 typedef struct AdjNode {
@@ -26,18 +42,25 @@ typedef struct AdjNode {
 } AdjNode;
 
 struct Vertex {
-    char            name[257];    /* MAX_NAME_LEN + 1                     */
-    AdjNode        *adj;          /* head of adjacency list (sorted)      */
-    Vertex         *next;         /* next vertex in global list           */
+    char            name[257];    /* MAX_NAME_LEN + 1 */
+    AdjNode        *adj;          /* Head of adjacency list (sorted) */
+    Vertex         *next;         /* Next vertex in global list      */
 };
 
 struct Graph {
-    Vertex *v_head;
-    size_t  v_count;
-    size_t  e_count;
+    Vertex *v_head;   // Global head pointer to vertex list
+    size_t  v_count;  // Number of vertices
+    size_t  e_count;  // Logical (undirected) edge count
 };
 
-/* ─── Helper: build Vertex* → index array (lexicographic) ───────────────── */
+/* ============================================================================
+ *  HELPER: build_index_map
+ * ----------------------------------------------------------------------------
+ *  Builds a flat array of pointers to all vertices in the graph (in lex order).
+ *  This enables O(1) index-based access for 'visited' lookups.
+ *  Returns the number of vertices, or 0 on allocation failure.
+ * ============================================================================
+ */
 static size_t build_index_map(const Graph *g, const Vertex ***out_vec)
 {
     size_t n = g->v_count;
@@ -49,6 +72,14 @@ static size_t build_index_map(const Graph *g, const Vertex ***out_vec)
     return n;
 }
 
+/* ============================================================================
+ *  HELPER: index_of
+ * ----------------------------------------------------------------------------
+ *  Finds the index of a vertex by name within the (sorted) array of vertex pointers.
+ *  Uses binary search for O(log V) time.
+ *  Returns the index if found, or -1 if not found.
+ * ============================================================================
+ */
 static ptrdiff_t index_of(const Vertex **vec, size_t n, const char *name)
 {
     size_t lo = 0, hi = n;
@@ -61,12 +92,23 @@ static ptrdiff_t index_of(const Vertex **vec, size_t n, const char *name)
     return -1;
 }
 
-/* ─── Public Command 7 handler ──────────────────────────────────────────── */
+/* ============================================================================
+ *  PUBLIC: cmd_path (Command 7 handler)
+ * ----------------------------------------------------------------------------
+ *  Checks if an undirected path exists from src to dst using iterative DFS.
+ *  - Uses a stack for traversal (no recursion).
+ *  - Tracks visited vertices via index bitmap for O(1) lookups.
+ *  - Pushes neighbors in reverse lex order so discovery order matches spec.
+ *
+ *  Returns true and prints "1" if a path exists; else prints "0" and returns false.
+ * ============================================================================
+ */
 bool cmd_path(Graph *g, const char *src, const char *dst, Stack *scratch)
 {
+    // --- Sanity checks: null graph or names mean no path ---
     if (!g || !src || !dst) { puts("0"); return false; }
 
-    /* Trivial src == dst check */
+    // --- Trivial case: src and dst are the same vertex name ---
     if (strcmp(src, dst) == 0) {
         for (Vertex *v = g->v_head; v; v = v->next)
             if (strcmp(v->name, src) == 0) { puts("1"); return true; }
@@ -74,11 +116,10 @@ bool cmd_path(Graph *g, const char *src, const char *dst, Stack *scratch)
         return false;
     }
 
-    /* Build index map + visited bitmap */
+    // --- Step 1: Build the vertex index map and 'visited' bitmap ---
     const Vertex **vec = NULL;
     size_t V = build_index_map(g, &vec);
     if (V == 0) { puts("0"); return false; }
-
     bool *visited = calloc(V, sizeof(bool));
     if (!visited) { free((void *)vec); puts("0"); return false; }
 
@@ -88,7 +129,7 @@ bool cmd_path(Graph *g, const char *src, const char *dst, Stack *scratch)
         free((void *)vec); free(visited); puts("0"); return false;
     }
 
-    /* Clear any residual items in scratch stack */
+    // --- Step 2: Prepare the stack (clear, then push start vertex) ---
     while (!stack_is_empty(scratch)) (void)stack_pop(scratch);
     stack_push(scratch, (void *)vec[s_idx]);
 
@@ -96,14 +137,14 @@ bool cmd_path(Graph *g, const char *src, const char *dst, Stack *scratch)
     while (!stack_is_empty(scratch) && !found) {
         Vertex *u = (Vertex *)stack_pop(scratch);
         ptrdiff_t u_idx = index_of(vec, V, u->name);
-        if (visited[u_idx]) continue;
+        if (visited[u_idx]) continue;  // Already explored
         visited[u_idx] = true;
         if (u_idx == t_idx) { found = true; break; }
 
-        /* Push neighbours in reverse lexicographic order */
+        // --- Step 3: Push all neighbors (reverse lex order for spec) ---
         size_t deg = 0; for (AdjNode *a = u->adj; a; a = a->next) ++deg;
         Vertex **buf = malloc(deg * sizeof(Vertex *));
-        if (!buf) break;                       /* graceful out-of-mem fallback */
+        if (!buf) break; // Out of memory: fail gracefully
         size_t i = 0; for (AdjNode *a = u->adj; a; a = a->next) buf[i++] = a->dst;
         while (i--) {
             ptrdiff_t v_idx = index_of(vec, V, buf[i]->name);
@@ -112,6 +153,7 @@ bool cmd_path(Graph *g, const char *src, const char *dst, Stack *scratch)
         free(buf);
     }
 
+    // --- Step 4: Output and clean up ---
     puts(found ? "1" : "0");
     free((void *)vec);
     free(visited);
