@@ -20,7 +20,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
-#include <stdint.h>
 
 #include "graph.h"   /* public API */
 
@@ -195,15 +194,12 @@ bool graph_vertex_exists(const Graph* g, const char* name) {
     return graph_find_vertex(g, name) != NULL;
 }
 
-size_t graph_get_neighbors(const Graph* g, const char* name,
-                           char neighbors[][MAX_NAME_LEN])
-{
-    Vertex *v = graph_find_vertex(g, name);
-    if (!v)
-        return SIZE_MAX;  /* vertex not found */
+size_t graph_get_neighbors(const Graph* g, const char* name, char neighbors[][MAX_NAME_LEN]) {
+    Vertex* v = graph_find_vertex(g, name);
+    if (!v) return -1;
 
-    size_t count = 0;
-    for (AdjNode *a = v->adj; a; a = a->next) {
+    int count = 0;
+    for (AdjNode* a = v->adj; a; a = a->next) {
         strncpy(neighbors[count], a->dst->name, MAX_NAME_LEN);
         neighbors[count][MAX_NAME_LEN - 1] = '\0';
         count++;

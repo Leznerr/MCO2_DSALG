@@ -13,7 +13,7 @@
  *    8                   - Find MST
  *    9  <src> <dst>      - Find shortest path
  *    10                  - Print graph
- *    0                   - Exit
+ *    11                   - Exit
  * ==========================================================================*/
 
 #include <stdio.h>
@@ -32,7 +32,7 @@
 #include "bfs.h"
 #include "path_check.h"
 #include "mst.h"
-#include "shortest_path.h"
+#include "shortest_Path.h"
 
 #define MAX_LINE_LEN 1024
 #define MAX_TOKEN_LEN 257
@@ -150,7 +150,7 @@ static void handle_bfs(Graph *g, Queue *scratch_queue, char tokens[][MAX_TOKEN_L
     }
     
     const char *start = tokens[1];
-    cmd_bfs(g, start, scratch_queue);
+    bfs(g, start);
 }
 
 static void handle_dfs(Graph *g, Stack *scratch_stack, char tokens[][MAX_TOKEN_LEN], int token_count)
@@ -179,7 +179,7 @@ static void handle_path_check(Graph *g, Stack *scratch_stack, char tokens[][MAX_
 static void handle_mst(Graph *g, char tokens[][MAX_TOKEN_LEN], int token_count)
 {
     (void)tokens; (void)token_count; // Unused parameters
-    cmd_mst(g);
+    primMST(g);
 }
 
 static void handle_shortest_path(Graph *g, char tokens[][MAX_TOKEN_LEN], int token_count)
@@ -191,7 +191,7 @@ static void handle_shortest_path(Graph *g, char tokens[][MAX_TOKEN_LEN], int tok
     
     const char *src = tokens[1];
     const char *dst = tokens[2];
-    cmd_shortest_path(g, src, dst);
+    shortestPath(g, src, dst);
 }
 
 static void handle_print_graph(Graph *g, char tokens[][MAX_TOKEN_LEN], int token_count)
@@ -251,7 +251,7 @@ int main(void)
         
         // Dispatch to appropriate handler
         switch (cmd) {
-            case 0:
+            case 11:
                 // Exit program
                 goto cleanup;
                 

@@ -88,9 +88,8 @@ void cmd_dfs(Graph *g, const char *start, Stack *scratch)
         if (visited[u_idx]) continue;
         visited[u_idx] = true;
 
-        if (!first_out) putchar(' ');
-        first_out = false;
         fputs(u->name, stdout);
+        putchar('\n');
 
         /* Push neighbours in reverse lexicographic order so smallest pops next */
         size_t deg = 0; for (AdjNode *a = u->adj; a; a = a->next) ++deg;
@@ -105,7 +104,6 @@ void cmd_dfs(Graph *g, const char *start, Stack *scratch)
         free(buf);
     }
     putchar('\n');
-
     free((void*)vec);
     free(visited);
 }
